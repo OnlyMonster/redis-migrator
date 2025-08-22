@@ -12,13 +12,17 @@ redis-migrator/
 ├── scripts/             # Shell scripts
 │   ├── clean-redis.sh   # Cluster cleanup
 │   ├── generate-data.sh # Sample data generation
+│   ├── init_clusters.sh # Cluster initialization
 │   ├── redis-migrator.sh # Main migration script
 │   └── verify-keys.sh   # Migration verification
-├── redis-cluster/      # Redis configuration
-│   ├── source-redis-node-*.conf # Source cluster configs
-│   └── target-redis-node-*.conf # Target cluster configs
+├── config/             # Configuration files
+│   └── redis-cluster/  # Redis cluster configuration
+│       ├── source-redis-node-*.conf # Source cluster configs
+│       └── target-redis-node-*.conf # Target cluster configs
 ├── docker-compose.yml  # Docker services definition
-└── Makefile           # Build and automation commands
+├── Dockerfile         # Migrator service definition
+├── requirements.txt   # Python dependencies
+└── Makefile          # Build and automation commands
 ```
 
 ## Getting Started
@@ -67,26 +71,84 @@ make verify
 
 ## Production Usage
 
-### Save Data from Source Cluster
+### Migration Between Physical Clusters
 
-1. Configure source cluster connection in `docker-compose.yml`:
-   ```yaml
-   source-redis-node-0:
-     ports:
-       - "8000:8000"  # Adjust port as needed
+For migrating data between two physical Redis clusters in different environments:
+
+1. Clone the repository on the source machine:
+   ```bash
+   git clone <repository-url>
+   cd redis-migrator
    ```
 
-2. Run save operation:
+2. Edit the `config.env` file to point to your source cluster:
    ```bash
-   make save
-   # or
+   SOURCE_REDIS_HOST=source-cluster-ip
+   SOURCE_REDIS_PORT=6379
+   SOURCE_REDIS_PASSWORD=your_password # if authentication is enabled
+   ```
+
+3. Save data from the source cluster:
+   ```bash
    ./scripts/redis-migrator.sh --save
    ```
+   This will create `redis_dump.bin` with all your data.
 
-3. Backup the generated dump file:
+4. Transfer the dump file to the target machine:
    ```bash
-   cp redis_dump.txt /path/to/backup/
+   scp redis_dump.bin user@target-machine:/path/to/redis-migrator/
    ```
+
+5. On the target machine, clone the repository and edit `config.env`:
+   ```bash
+   TARGET_REDIS_HOST=target-cluster-ip
+   TARGET_REDIS_PORT=6379
+   TARGET_REDIS_PASSWORD=your_password # if authentication is enabled
+   ```
+
+6. Restore data to the target cluster:
+   ```bash
+   ./scripts/redis-migrator.sh --restore
+   ```
+
+7. Verify the migration. Since direct verification between physically separated clusters is not possible, 
+   you can use these alternative approaches:
+
+   a. Compare key counts and types:
+   ```bash
+   # On source machine
+   ./scripts/verify-keys.sh --source-only > source_stats.txt
+   
+   # On target machine
+   ./scripts/verify-keys.sh --target-only > target_stats.txt
+   
+   # Compare the statistics files
+   diff source_stats.txt target_stats.txt
+   ```
+
+   b. Sample-based verification:
+   ```bash
+   # Generate list of random keys from source
+   redis-cli -h source-cluster-ip -p 6379 --scan --pattern '*' | shuf -n 100 > sample_keys.txt
+   
+   # Check these specific keys in both clusters and compare values
+   ./scripts/verify-keys.sh --keys-file sample_keys.txt
+   ```
+
+   c. Application-level verification:
+   - Run your application's test suite against the new cluster
+   - Monitor error rates and performance metrics
+   - Gradually shift read traffic to verify data consistency
+
+### Tips for Physical Cluster Migration
+- Ensure network connectivity and firewall rules between the migrator and both clusters
+- Use private network addresses when possible
+- Monitor cluster memory and disk space during migration
+- Consider running a test migration with a subset of keys first
+- Take backup of target cluster before migration
+- Consider using `screen` or `tmux` for long-running migrations
+
+### Local Development Setup
 
 ### Restore Data to Target Cluster
 
@@ -124,11 +186,27 @@ make verify
 
 Create `config.env` to override defaults:
 ```bash
+# Local development defaults
 SOURCE_REDIS_HOST=source-redis-node-0
 SOURCE_REDIS_PORT=8000
 TARGET_REDIS_HOST=target-redis-node-0
 TARGET_REDIS_PORT=7000
-MIGRATION_FILE=redis_dump.txt
+MIGRATION_FILE=redis_dump.bin
+
+# Optional authentication
+SOURCE_REDIS_PASSWORD=your_source_password
+TARGET_REDIS_PASSWORD=your_target_password
+
+# Optional SSL/TLS configuration
+SOURCE_REDIS_SSL=true
+TARGET_REDIS_SSL=true
+SOURCE_REDIS_CERT_PATH=/path/to/source/cert.pem
+TARGET_REDIS_CERT_PATH=/path/to/target/cert.pem
+
+# Optional performance tuning
+BATCH_SIZE=1000        # Number of keys to process in one batch
+PARALLEL_JOBS=4        # Number of parallel migration jobs
+MAX_MEMORY_PERCENT=80  # Maximum memory usage percentage
 ```
 
 ### Make Commands
@@ -158,9 +236,16 @@ MIGRATION_FILE=redis_dump.txt
 
 ## Limitations
 
-- No TTL migration support
 - Memory requirements for dump file
 - Requires sufficient disk space
+- Large TTL values (>2^63-1 ms, ~292 years) may be truncated
+
+## Features
+
+- Full TTL support for all keys
+- Atomic key restoration with original TTL values
+- Batch processing for efficient migration
+- Error handling and progress reporting
 
 ## Troubleshooting
 
@@ -168,9 +253,18 @@ MIGRATION_FILE=redis_dump.txt
 
 1. Cluster Connection Errors:
    ```bash
-   # Check cluster status
+   # Check cluster status (local development)
    docker compose exec source-redis-node-0 redis-cli -p 8000 cluster info
+   
+   # Check cluster status (physical clusters)
+   redis-cli -h source-cluster-ip -p 6379 cluster info
+   redis-cli -h target-cluster-ip -p 6379 cluster info
    ```
+
+2. Verification in Physical Clusters:
+   - If clusters are in different networks, use the separate verification methods described above
+   - Keep source cluster running until verification is complete
+   - Consider maintaining temporary read-only access to source cluster during verification
 
 2. Memory Issues:
    - Increase Docker memory limit
