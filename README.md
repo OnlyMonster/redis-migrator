@@ -56,17 +56,21 @@ This will:
 
 ```bash
 # Generate test data in source cluster
-make generate-data
+make generate
 # or
 ./scripts/generate-data.sh
 
 # Perform test migration
-make migrate
+make save 
+make restore
 # or
 ./scripts/redis-migrator.sh --save && ./scripts/redis-migrator.sh --restore
 
 # Verify migration results
 make verify
+
+# Stop Redis clusters and migrator service
+make down
 ```
 
 ## Production Usage
@@ -148,37 +152,6 @@ For migrating data between two physical Redis clusters in different environments
 - Take backup of target cluster before migration
 - Consider using `screen` or `tmux` for long-running migrations
 
-### Local Development Setup
-
-### Restore Data to Target Cluster
-
-1. Copy dump file to target server:
-   ```bash
-   scp redis_dump.txt user@target-server:/path/to/redis-migrator/
-   ```
-
-2. Configure target cluster connection in `docker-compose.yml`:
-   ```yaml
-   target-redis-node-0:
-     ports:
-       - "7000:7000"  # Adjust port as needed
-   ```
-
-3. Run restore operation:
-   ```bash
-   make restore
-   # or
-   ./scripts/redis-migrator.sh --restore
-   ```
-
-### Verification
-
-After migration, verify data consistency:
-```bash
-make verify
-# or
-./scripts/verify-keys.sh && python3 src/verify_clusters.py
-```
 
 ## Configuration
 
