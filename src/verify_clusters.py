@@ -5,20 +5,15 @@ import sys
 
 def get_all_keys(cluster_name, port):
     try:
-        # Connect to Redis cluster
         rc = RedisCluster(host=f"{cluster_name}-redis-node-0", 
                        port=port,
                        decode_responses=True,
                        skip_full_coverage_check=True)
         
-        # Get all keys using SCAN from each master node
         all_keys = set()
-        
-        # Get all nodes and identify masters
         nodes = []
         cluster_nodes = rc.execute_command("CLUSTER NODES")
         if isinstance(cluster_nodes, str):
-            # Handle string response (old format)
             for line in cluster_nodes.split("\n"):
                 if not line:
                     continue
@@ -28,16 +23,13 @@ def get_all_keys(cluster_name, port):
                     host, port = addr.split(":")
                     nodes.append((host, int(port)))
         else:
-            # Handle dict response (new format)
             for node_id, node_info in cluster_nodes.items():
                 if isinstance(node_info, dict) and ('master' in node_info.get('flags', '')):
-                    # В новом формате node_id уже содержит host:port
                     host, port = node_id.split(':')
                     nodes.append((host, int(port)))
                 
-        print(f"Found {len(nodes)} master nodes")
+                print(f"Found {len(nodes)} master nodes")
         
-        # Scan keys from each master
         for host, port in nodes:
             print(f"Scanning {host}:{port}...")
             node_client = redis.Redis(host=host, port=port, decode_responses=True)
@@ -49,7 +41,6 @@ def get_all_keys(cluster_name, port):
                     break
                     
         key_values = {}
-        # Get type and value for each key using cluster connection for proper slot routing
         for key in all_keys:
             try:
                 key_type = rc.type(key)
@@ -65,9 +56,7 @@ def get_all_keys(cluster_name, port):
                     value = rc.zrange(key, 0, -1, withscores=True)
                 else:
                     print(f"Warning: unknown type {key_type} for key {key}")
-                    continue
-                    
-                # Get TTL for the key
+                    continue                # Get TTL for the key
                 ttl = rc.ttl(key)
                 key_values[key] = {
                     'type': key_type, 
@@ -101,7 +90,6 @@ print("\nScanning target cluster keys...")
 target_data = get_all_keys('target', 7006)
 print(f"Found {len(target_data)} keys in target cluster")
 
-# Compare the data
 errors = []
 missing_keys = set(source_data.keys()) - set(target_data.keys())
 if missing_keys:
@@ -111,7 +99,6 @@ extra_keys = set(target_data.keys()) - set(source_data.keys())
 if extra_keys:
     errors.append(f"Extra keys in target: {extra_keys}")
 
-# For keys present in both, compare types and values
 common_keys = set(source_data.keys()) & set(target_data.keys())
 for key in common_keys:
     source_info = source_data[key]
@@ -125,8 +112,6 @@ for key in common_keys:
         errors.append(f"Value mismatch for key {key}:")
         errors.append(f"  Source: {source_info['value']}")
         errors.append(f"  Target: {target_info['value']}")
-    
-    # Compare TTL values with a tolerance of 10 seconds to account for migration time
     source_ttl = source_info['ttl']
     target_ttl = target_info['ttl']
     if abs(source_ttl - target_ttl) > 10 and not (source_ttl <= 0 and target_ttl <= 0):

@@ -6,22 +6,19 @@ from redis.cluster import RedisCluster
 INT_LEN = 4
 
 def write_record(f, key, ttl, dump_value):
-    """Writes a single record (key, ttl, dump) to the binary file."""
-    f.write(struct.pack('>I', len(key)))  # Unsigned Int, Big-endian for key length
+    f.write(struct.pack('>I', len(key)))
     f.write(key)
-    f.write(struct.pack('>q', ttl))  # Signed 64-bit Int for TTL (PTTL can be large)
-    f.write(struct.pack('>I', len(dump_value)))  # Unsigned Int for dump length
+    f.write(struct.pack('>q', ttl))
+    f.write(struct.pack('>I', len(dump_value)))
     f.write(dump_value)
 
 def read_record(f):
-    """Reads a single record from the binary file."""
     key_len_bytes = f.read(INT_LEN)
     if not key_len_bytes:
         return None
     key_len = struct.unpack('>I', key_len_bytes)[0]
     key = f.read(key_len)
     
-    # Read 8 bytes for a 64-bit signed integer (long long)
     ttl_bytes = f.read(8)
     ttl = struct.unpack('>q', ttl_bytes)[0]
     
@@ -32,20 +29,14 @@ def read_record(f):
     return key, ttl, dump_value
 
 def dump_all_keys_to_file(host, port, output_file):
-    """
-    Safely scans all keys from a Redis Cluster and writes them to a binary file.
-    This function uses the recommended SCAN method to avoid blocking the server.
-    """
     try:
-        # Connect to Redis cluster properly
         r = RedisCluster(host=host, port=port, decode_responses=False, skip_full_coverage_check=True)
-        r.ping()  # Verify connection
+        r.ping()
         
         print(f"Connected to Redis Cluster at {host}:{port}. Starting key dump to {output_file}...")
         
         keys_dumped = 0
         with open(output_file, 'wb') as f:
-            # Use cluster scan to get all keys
             for key in r.scan_iter('*'):
                 ttl = r.pttl(key)
                 if ttl < 0:
@@ -67,13 +58,9 @@ def dump_all_keys_to_file(host, port, output_file):
         sys.exit(1)
 
 def restore_all_keys_from_file(host, port, input_file):
-    """
-    Restores all keys from a binary dump file to a Redis Cluster.
-    """
     try:
-        # Connect to Redis cluster properly
         r = RedisCluster(host=host, port=port, decode_responses=False, skip_full_coverage_check=True)
-        r.ping()  # Verify connection
+        r.ping()
         
         print(f"Connected to Redis Cluster at {host}:{port}. Starting key restore from {input_file}...")
         
@@ -82,14 +69,13 @@ def restore_all_keys_from_file(host, port, input_file):
             while True:
                 record = read_record(f)
                 if record is None:
-                    break  # End of file
+                    break
                 
                 key, ttl, dump_value = record
                 
-                # Using a pipeline is much more efficient for bulk operations
                 pipe = r.pipeline(transaction=False)
                 pipe.delete(key)
-                pipe.restore(key, ttl, dump_value, replace=False)  # replace=False because we just deleted it
+                pipe.restore(key, ttl, dump_value, replace=False)
                 
                 try:
                     pipe.execute()

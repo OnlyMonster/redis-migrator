@@ -4,7 +4,6 @@
 # A robust script for migrating data between Redis Clusters.
 # It acts as a wrapper for a powerful Python helper script.
 
-# Stop script on any error
 set -e
 set -o pipefail
 
