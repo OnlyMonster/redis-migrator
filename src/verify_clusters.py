@@ -67,7 +67,13 @@ def get_all_keys(cluster_name, port):
                     print(f"Warning: unknown type {key_type} for key {key}")
                     continue
                     
-                key_values[key] = {'type': key_type, 'value': value}
+                # Get TTL for the key
+                ttl = rc.ttl(key)
+                key_values[key] = {
+                    'type': key_type, 
+                    'value': value,
+                    'ttl': ttl
+                }
             except Exception as e:
                 print(f"Warning: error getting value for key {key}: {str(e)}")
                 continue
@@ -119,9 +125,28 @@ for key in common_keys:
         errors.append(f"Value mismatch for key {key}:")
         errors.append(f"  Source: {source_info['value']}")
         errors.append(f"  Target: {target_info['value']}")
+    
+    # Compare TTL values with a tolerance of 10 seconds to account for migration time
+    source_ttl = source_info['ttl']
+    target_ttl = target_info['ttl']
+    if abs(source_ttl - target_ttl) > 10 and not (source_ttl <= 0 and target_ttl <= 0):
+        errors.append(f"TTL mismatch for key {key}:")
+        errors.append(f"  Source TTL: {source_ttl}")
+        errors.append(f"  Target TTL: {target_ttl}")
 
 if not errors:
     print(f"\nVerification successful! Both clusters have {len(source_data)} keys with identical types and values.")
+    print("\nTTL Statistics:")
+    ttl_keys = 0
+    for key in source_data:
+        if source_data[key]['ttl'] > 0:
+            ttl_keys += 1
+            print(f"Key: {key}")
+            print(f"  Source TTL: {source_data[key]['ttl']} seconds")
+            print(f"  Target TTL: {target_data[key]['ttl']} seconds")
+            print(f"  TTL Difference: {abs(source_data[key]['ttl'] - target_data[key]['ttl'])} seconds")
+    print(f"\nTotal keys with TTL: {ttl_keys}")
+    print(f"Keys without TTL: {len(source_data) - ttl_keys}")
     sys.exit(0)
 else:
     print("\nVerification failed!")

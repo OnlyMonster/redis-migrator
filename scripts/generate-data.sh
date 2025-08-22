@@ -21,9 +21,15 @@ execute_redis_command() {
   redis-cli -c -h "${SOURCE_REDIS_HOST}" -p "${SOURCE_REDIS_PORT}" "$@"
 }
 
-echo "Adding 20 String keys..."
+echo "Adding 20 String keys (10 with TTL)..."
 for i in $(seq 1 20); do
-  execute_redis_command SET "string:key:${i}" "value_for_string_${i}"
+  if [ $i -le 10 ]; then
+    # First 10 keys with TTL (varying from 1 hour to 10 hours)
+    execute_redis_command SET "string:key:${i}" "value_for_string_${i}" EX $((3600 * i))
+  else
+    # Last 10 keys without TTL
+    execute_redis_command SET "string:key:${i}" "value_for_string_${i}"
+  fi
 done
 
 echo "Adding 20 List keys..."
@@ -33,9 +39,13 @@ for i in $(seq 1 20); do
   execute_redis_command LPUSH "list:key:${i}" "item_${i}_a" "item_${i}_b" "item_${i}_c"
 done
 
-echo "Adding 20 Hash keys..."
+echo "Adding 20 Hash keys (10 with TTL)..."
 for i in $(seq 1 20); do
   execute_redis_command HSET "hash:key:${i}" "field1" "value_${i}_field1" "field2" "value_${i}_field2"
+  if [ $i -le 10 ]; then
+    # First 10 keys with TTL (varying from 2 hours to 20 hours)
+    execute_redis_command EXPIRE "hash:key:${i}" $((7200 * i))
+  fi
 done
 
 echo "Adding 20 Set keys..."
