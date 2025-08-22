@@ -56,21 +56,17 @@ This will:
 
 ```bash
 # Generate test data in source cluster
-make generate
-# or
-./scripts/generate-data.sh
+make generate-data
 
-# Perform test migration
-make save 
-make restore
-# or
-./scripts/redis-migrator.sh --save && ./scripts/redis-migrator.sh --restore
+# Perform full migration
+make migrate    # equivalent to: make save && make restore
 
 # Verify migration results
 make verify
 
-# Stop Redis clusters and migrator service
-make down
+# Stop and clean up
+make down      # stop all containers
+make clean     # remove all data from clusters
 ```
 
 ## Production Usage
@@ -159,37 +155,47 @@ For migrating data between two physical Redis clusters in different environments
 
 Create `config.env` to override defaults:
 ```bash
-# Local development defaults
-SOURCE_REDIS_HOST=source-redis-node-0
-SOURCE_REDIS_PORT=8000
-TARGET_REDIS_HOST=target-redis-node-0
-TARGET_REDIS_PORT=7000
-MIGRATION_FILE=redis_dump.bin
+# Cluster connection settings
+SOURCE_REDIS_HOST=source-redis-node-0  # Host of source Redis cluster
+SOURCE_REDIS_PORT=8000                 # Port of source Redis cluster
+TARGET_REDIS_HOST=target-redis-node-0  # Host of target Redis cluster
+TARGET_REDIS_PORT=7000                 # Port of target Redis cluster
 
-# Optional authentication
-SOURCE_REDIS_PASSWORD=your_source_password
-TARGET_REDIS_PASSWORD=your_target_password
+# Migration settings
+MIGRATION_FILE=redis_dump.bin          # Binary dump file name
 
-# Optional SSL/TLS configuration
-SOURCE_REDIS_SSL=true
-TARGET_REDIS_SSL=true
-SOURCE_REDIS_CERT_PATH=/path/to/source/cert.pem
-TARGET_REDIS_CERT_PATH=/path/to/target/cert.pem
+# Authentication (if needed)
+SOURCE_REDIS_PASSWORD=                 # Source cluster password
+TARGET_REDIS_PASSWORD=                 # Target cluster password
 
-# Optional performance tuning
-BATCH_SIZE=1000        # Number of keys to process in one batch
-PARALLEL_JOBS=4        # Number of parallel migration jobs
-MAX_MEMORY_PERCENT=80  # Maximum memory usage percentage
+# Note: The following features are planned for future releases:
+# - SSL/TLS support for secure connections
+# - Batch processing for large datasets
+# - Parallel migration for improved performance
+# - Memory usage control and monitoring
 ```
 
 ### Make Commands
 
-- `make setup`: Start Redis clusters
-- `make generate-data`: Create test data
-- `make save`: Save source cluster data
-- `make restore`: Restore data to target cluster
-- `make verify`: Verify migration
-- `make clean`: Clean all data and containers
+The following commands are available for managing the migration process in a Docker environment:
+
+#### Setup and Management
+- `make setup` - Initialize and start Redis clusters and migrator service
+- `make down` - Stop and remove all containers
+- `make clean` - Remove all data from both clusters
+
+#### Migration Commands
+- `make generate-data` - Create sample test data in source cluster
+- `make save` - Export data from source cluster to dump file
+- `make restore` - Import data from dump file to target cluster
+- `make migrate` - Run full migration (save + restore)
+- `make verify` - Validate data consistency between clusters
+
+#### Testing
+- `make test` - Run complete test cycle with all steps
+- `make help` - Show available commands and their descriptions
+
+For physical cluster migration, use the scripts directly as shown in the [Production Usage](#production-usage) section.
 
 ## Supported Data Types
 
@@ -212,6 +218,19 @@ MAX_MEMORY_PERCENT=80  # Maximum memory usage percentage
 - Memory requirements for dump file
 - Requires sufficient disk space
 - Large TTL values (>2^63-1 ms, ~292 years) may be truncated
+- No SSL/TLS поддержка в текущей версии
+- Нет пакетной обработки (batch processing)
+- Нет параллельной миграции
+- Нет контроля использования памяти
+
+## Roadmap
+
+Планируемые улучшения:
+1. Добавить поддержку SSL/TLS для безопасного соединения
+2. Реализовать пакетную обработку для больших наборов данных
+3. Добавить параллельную миграцию для ускорения процесса
+4. Реализовать контроль использования памяти
+5. Улучшить обработку аутентификации
 
 ## Features
 

@@ -3,7 +3,8 @@
 .PHONY: all setup test clean build save restore verify help generate migrate
 
 # Variables
-DUMP_FILE := redis_dump.txt
+DUMP_FILE := redis_dump.bin
+DOCKER_COMPOSE := docker compose
 
 # Default target
 .DEFAULT_GOAL := help
@@ -32,36 +33,48 @@ clean:
 	@echo "Redis clusters cleaned"
 
 # Testing and migration
-test: setup clean generate save restore verify down
+test: setup clean generate-data save restore verify down
 	@echo "Full test cycle completed"
 
-generate:
+generate-data:
 	@echo "Generating test data..."
-	docker compose exec migrator ./scripts/generate-data.sh
+	$(DOCKER_COMPOSE) exec migrator ./scripts/generate-data.sh
+	@echo "Test data generation completed"
 
 save:
 	@echo "Saving data from source cluster..."
-	docker compose exec migrator ./scripts/redis-migrator.sh --save
+	$(DOCKER_COMPOSE) exec migrator ./scripts/redis-migrator.sh --save
+	@echo "Data save completed"
 
 restore:
 	@echo "Restoring data to target cluster..."
-	docker compose exec migrator ./scripts/redis-migrator.sh --restore
+	$(DOCKER_COMPOSE) exec migrator ./scripts/redis-migrator.sh --restore
+	@echo "Data restore completed"
 
 verify:
 	@echo "Verifying migration..."
-	docker compose exec migrator ./scripts/verify-keys.sh
-	docker compose exec migrator python3 src/verify_clusters.py
+	$(DOCKER_COMPOSE) exec migrator ./scripts/verify-keys.sh
+	$(DOCKER_COMPOSE) exec migrator python3 src/verify_clusters.py
+
+migrate: save restore
+	@echo "Migration completed successfully"
 
 # Help
 help:
 	@echo "Redis Migrator - Available commands:"
-	@echo "  setup         - Start Redis clusters and migrator service"
-	@echo "  generate      - Create test data in source cluster"
-	@echo "  save         - Save data from source cluster"
-	@echo "  restore      - Restore data to target cluster"
-	@echo "  verify       - Check migration consistency"
-	@echo "  clean        - Remove containers and data"
-	@echo "  test         - Run full test cycle"
-	@echo "  migrate      - Run save and restore"
-	@echo "  down         - Stop containers"
+	@echo ""
+	@echo "Setup and Management:"
+	@echo "  setup         - Initialize and start Redis clusters and migrator service"
+	@echo "  down         - Stop and remove all containers"
+	@echo "  clean        - Remove all data from both clusters"
+	@echo ""
+	@echo "Migration Commands:"
+	@echo "  generate-data - Create sample test data in source cluster"
+	@echo "  save         - Export data from source cluster to dump file"
+	@echo "  restore      - Import data from dump file to target cluster"
+	@echo "  migrate      - Run full migration (save + restore)"
+	@echo "  verify       - Validate data consistency between clusters"
+	@echo ""
+	@echo "Testing:"
+	@echo "  test         - Run complete test cycle with all steps"
 	@echo "  help         - Show this help message"
