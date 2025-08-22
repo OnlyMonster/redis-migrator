@@ -1,0 +1,205 @@
+networks:
+  redis-net:
+    driver: bridge
+
+services:
+  # Source Redis Cluster Nodes
+  source-redis-node-0:
+    image: redis:7-alpine
+    command: sh -c "rm -f /data/nodes.conf /data/dump.rdb && redis-server /usr/local/etc/redis/redis.conf"
+    volumes:
+      - ./config/redis-cluster/source-redis-node-0.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - "8000:8000"
+    networks:
+      - redis-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "8000", "ping"]
+      interval: 1s
+      timeout: 1s
+      retries: 30
+
+  source-redis-node-1:
+    image: redis:7-alpine
+    command: sh -c "rm -f /data/nodes.conf /data/dump.rdb && redis-server /usr/local/etc/redis/redis.conf"
+    volumes:
+      - ./config/redis-cluster/source-redis-node-1.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - "8001:8001"
+    networks:
+      - redis-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "8001", "ping"]
+      interval: 1s
+      timeout: 1s
+      retries: 30
+
+  source-redis-node-2:
+    image: redis:7-alpine
+    command: sh -c "rm -f /data/nodes.conf /data/dump.rdb && redis-server /usr/local/etc/redis/redis.conf"
+    volumes:
+      - ./config/redis-cluster/source-redis-node-2.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - "8002:8002"
+    networks:
+      - redis-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "8002", "ping"]
+      interval: 1s
+      timeout: 1s
+      retries: 30
+
+  source-redis-node-3:
+    image: redis:7-alpine
+    command: sh -c "rm -f /data/nodes.conf /data/dump.rdb && redis-server /usr/local/etc/redis/redis.conf"
+    volumes:
+      - ./config/redis-cluster/source-redis-node-3.conf:/usr/local/etc/redis/redis.conf
+    ports: 
+      - "8003:8003"
+    networks:
+      - redis-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "8003", "ping"]
+      interval: 1s
+      timeout: 1s
+      retries: 30
+
+  source-redis-node-4:
+    image: redis:7-alpine
+    command: sh -c "rm -f /data/nodes.conf /data/dump.rdb && redis-server /usr/local/etc/redis/redis.conf"
+    volumes:
+      - ./config/redis-cluster/source-redis-node-4.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - "8004:8004"
+    networks:
+      - redis-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "8004", "ping"]
+      interval: 1s
+      timeout: 1s
+      retries: 30
+
+  source-redis-node-5:
+    image: redis:7-alpine
+    command: sh -c "rm -f /data/nodes.conf /data/dump.rdb && redis-server /usr/local/etc/redis/redis.conf"
+    volumes:
+      - ./config/redis-cluster/source-redis-node-5.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - "8005:8005"
+    networks:
+      - redis-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "8005", "ping"]
+      interval: 1s
+      timeout: 1s
+      retries: 30
+
+  # Target Redis Cluster Nodes
+  target-redis-node-0:
+    image: redis:7-alpine
+    command: sh -c "rm -f /data/nodes.conf /data/dump.rdb && redis-server /usr/local/etc/redis/redis.conf"
+    volumes:
+      - ./config/redis-cluster/target-redis-node-0.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - "7006:7006"
+    networks:
+      - redis-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "7006", "ping"]
+      interval: 1s
+      timeout: 1s
+      retries: 30
+
+  target-redis-node-1:
+    image: redis:7-alpine
+    command: sh -c "rm -f /data/nodes.conf /data/dump.rdb && redis-server /usr/local/etc/redis/redis.conf"
+    volumes:
+      - ./config/redis-cluster/target-redis-node-1.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - "7007:7007"
+    networks:
+      - redis-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "7007", "ping"]
+      interval: 1s
+      timeout: 1s
+      retries: 30
+
+  target-redis-node-2:
+    image: redis:7-alpine
+    command: sh -c "rm -f /data/nodes.conf /data/dump.rdb && redis-server /usr/local/etc/redis/redis.conf"
+    volumes:
+      - ./config/redis-cluster/target-redis-node-2.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - "7008:7008"
+    networks:
+      - redis-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "7008", "ping"]
+      interval: 1s
+      timeout: 1s
+      retries: 30
+
+  target-redis-node-3:
+    image: redis:7-alpine
+    command: sh -c "rm -f /data/nodes.conf /data/dump.rdb && redis-server /usr/local/etc/redis/redis.conf"
+    volumes:
+      - ./config/redis-cluster/target-redis-node-3.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - "7009:7009"
+    networks:
+      - redis-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "7009", "ping"]
+      interval: 1s
+      timeout: 1s
+      retries: 30
+
+  target-redis-node-4:
+    image: redis:7-alpine
+    command: sh -c "rm -f /data/nodes.conf /data/dump.rdb && redis-server /usr/local/etc/redis/redis.conf"
+    volumes:
+      - ./config/redis-cluster/target-redis-node-4.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - "7010:7010"
+    networks:
+      - redis-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "7010", "ping"]
+      interval: 1s
+      timeout: 1s
+      retries: 30
+
+  target-redis-node-5:
+    image: redis:7-alpine
+    command: sh -c "rm -f /data/nodes.conf /data/dump.rdb && redis-server /usr/local/etc/redis/redis.conf"
+    volumes:
+      - ./config/redis-cluster/target-redis-node-5.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - "7011:7011"
+    networks:
+      - redis-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "7011", "ping"]
+      interval: 1s
+      timeout: 1s
+      retries: 30
+
+  migrator:
+    build: .
+    volumes:
+      - ./src:/app/src
+      - ./scripts:/app/scripts
+      - ./requirements.txt:/app/requirements.txt
+    networks:
+      - redis-net
+    environment:
+      - SOURCE_REDIS_HOST=source-redis-node-0
+      - SOURCE_REDIS_PORT=8000
+      - TARGET_REDIS_HOST=target-redis-node-0
+      - TARGET_REDIS_PORT=7000
+    command: >
+      sh -c "chmod +x /app/scripts/* &&
+             tail -f /dev/null"
+
+  

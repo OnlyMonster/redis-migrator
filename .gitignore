@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Redis dumps
+*.rdb
+redis_dump.bin
+redis_dump.txt
+dump.rdb
+
+# Logs
+*.log
+logs/
+
+# Local development files
+.env
+config.env
+.venv/
+venv/
+ENV/
+.idea/
+.vscode/
+
+# Docker
+.docker/
+
+# OS specific
+.DS_Store
+Thumbs.db
