@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # redis-migrator.sh
 # A robust script for migrating data between Redis Clusters.
@@ -40,8 +40,8 @@ check_dependencies() {
     echo "Error: python3 is not installed or not in PATH."
     exit 1
   fi
-  if [ ! -f "/app/src/redis_helper.py" ]; then
-    echo "Error: The helper script /app/src/redis_helper.py was not found."
+  if [ ! -f "./src/redis_helper.py" ]; then
+    echo "Error: The helper script ./src/redis_helper.py was not found."
     exit 1
   fi
 }
@@ -53,7 +53,7 @@ save_data() {
 
   echo "Delegating data save to redis_helper.py..."
   # The Python script handles everything: scanning, dumping, and writing the binary file.
-  python3 /app/src/redis_helper.py dump "${source_host}" "${source_port}" "${DUMP_FILE}"
+  python3 ./src/redis_helper.py dump "${source_host}" "${source_port}" "${DUMP_FILE}"
 }
 
 # Function to RESTORE data by delegating to the Python script
@@ -68,7 +68,7 @@ restore_data() {
 
   echo "Delegating data restore to redis_helper.py..."
   # The Python script handles everything: reading the binary file and restoring keys.
-  python3 /app/src/redis_helper.py restore "${target_host}" "${target_port}" "${DUMP_FILE}"
+  python3 ./src/redis_helper.py restore "${target_host}" "${target_port}" "${DUMP_FILE}"
 }
 
 # --- Main Logic ---
