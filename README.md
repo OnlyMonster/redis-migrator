@@ -111,20 +111,32 @@ For migrating data between two physical Redis clusters in different environments
    ```bash
    scp redis_dump.bin user@target-machine:/path/to/redis-migrator/
    ```
-
-7. On the target machine, clone the repository and edit `config.env`:
+7. On target mashine init config.env:
    ```bash
-   TARGET_REDIS_HOST=target-cluster-ip
-   TARGET_REDIS_PORT=6379
-   TARGET_REDIS_PASSWORD=your_password # if authentication is enabled
+   ./scripts/redis-migrator.sh --init
    ```
+8. Edit the `config.env` file to point to your target cluster:
+   ```bash
+   # Address of any node in the source Redis Cluster
+   SOURCE_NODE="source-redis-node-0:8000"
 
-8. Restore data to the target cluster:
+   # Address of any node in the target Redis Cluster
+   TARGET_NODE="target-redis-node-0:7006"
+
+   # File to use for saving and restoring data (binary format)
+   DUMP_FILE="redis_dump.bin"
+   ```
+9. Init Python env and install requirements modules:
+   ```
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
+   ```
+10. Restore data to the target cluster:
    ```bash
    ./scripts/redis-migrator.sh --restore
    ```
-
-9. Verify the migration. Since direct verification between physically separated clusters is not possible, 
+11. Verify the migration. Since direct verification between physically separated clusters is not possible, 
    you can use these alternative approaches:
 
    a. Compare key counts and types:
